@@ -1,4 +1,4 @@
-package main
+package common
 
 import (
 	"bytes"
@@ -10,20 +10,20 @@ type CodeWriter interface {
 	L(args ...interface{})
 }
 
-type Helper struct {
+type CodeBuffer struct {
 	buf bytes.Buffer
 }
 
-func (h *Helper) P(args ...interface{}) {
+func (h *CodeBuffer) P(args ...interface{}) {
 	fmt.Fprint(&h.buf, args...)
 }
 
-func (h *Helper) L(args ...interface{}) {
+func (h *CodeBuffer) L(args ...interface{}) {
 	h.P(args...)
 	h.P("\n")
 }
 
-func (h *Helper) Tab() string {
+func (h *CodeBuffer) Tab() string {
 	return "\t"
 }
 
@@ -71,6 +71,7 @@ func WithCurls(h CodeWriter, f func(h CodeWriter)) {
 	h.L("}")
 }
 
+// TODO: remake WithInComment, so it can be used with Generator
 func WithInComment(h CodeWriter, f func(h CodeWriter)) {
 	h.L("/*")
 	f(h)

@@ -6,46 +6,37 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/catinapoke/crud-generation/common"
 	"github.com/pkg/errors"
 )
 
-type InputItems struct {
-	Name         string
-	DatabaseName string
-	Type         string
+func NewDatabaseTag(rowname string) common.FieldTag {
+	return common.FieldTag{Key: "db", Value: rowname}
+}
+
+type EnitityRow struct {
+	common.FieldData
 	IsPrimaryKey bool
 }
 
-type InputStruct struct {
+type DatabaseEntity struct {
 	Name         string
 	DatabaseName string
-	Items        []InputItems
+	Items        []EnitityRow
 }
 
-type Generator struct {
-}
-
-func (Generator) Generate(items InputStruct) string {
-	g := &Helper{}
-
-	// generate header
-	g.L("package main")
-	g.L("")
-	g.L("import (")
-	g.L(g.Tab(), `"context"`)
-	g.L(")")
-	g.L("")
-
-	// generate struct
-	g.L("type ", items.Name, " struct {")
+func (items DatabaseEntity) GetPrimaryKeys() []EnitityRow {
+	primary := []EnitityRow{}
 	for _, item := range items.Items {
-		g.L("    ", item.Name, " ", item.Type, " `db:\"", item.DatabaseName, "\"`")
+		if item.IsPrimaryKey {
+			primary = append(primary, item)
+		}
 	}
-	g.L("}")
+	return primary
+}
 
-	// generate query
-	g.L("const(")
-	g.P(g.Tab(), "queryGet", items.Name, " = `select ")
+func (Generator) SelectQuery(g *CodeBuffer, items DatabaseEntity) {
+	g.L("`select ")
 	for i, item := range items.Items {
 		g.P(item.DatabaseName)
 		if i != len(items.Items)-1 {
@@ -58,12 +49,7 @@ func (Generator) Generate(items InputStruct) string {
 	g.L("")
 	g.P(g.Tab(), "where ")
 
-	primary := []InputItems{}
-	for _, item := range items.Items {
-		if item.IsPrimaryKey {
-			primary = append(primary, item)
-		}
-	}
+	primary := items.GetPrimaryKeys()
 
 	count := 1
 	for i, item := range primary {
@@ -76,10 +62,26 @@ func (Generator) Generate(items InputStruct) string {
 	}
 	g.L("")
 	g.L("`")
+}
+
+func (gen Generator) Generate(items DatabaseEntity) string {
+	g := &CodeBuffer{}
+
+	// generate header
+	gen.PackageHeader(g, "context")
+
+	// generate struct
+	gen.Struct(g, items)
+
+	// generate query
+	g.L("const(")
+	g.P(g.Tab(), "queryGet", items.Name, " = ")
+	gen.SelectQuery(g, items)
 	g.L(")")
 
 	// generate get method
 	g.P("func Get", items.Name, "(ctx context.Context, db Querier, ")
+	primary := items.GetPrimaryKeys()
 	for i, item := range primary {
 		g.P(item.Name, " ", item.Type)
 		if i != len(primary)-1 {
@@ -105,7 +107,7 @@ func (Generator) Generate(items InputStruct) string {
 	return g.buf.String()
 }
 
-func (g *Generator) GenerateInFile(items InputStruct, basePath string) error {
+func (g *Generator) GenerateInFile(items DatabaseEntity, basePath string) error {
 	data := g.Generate(items)
 
 	// write to file

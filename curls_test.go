@@ -6,12 +6,12 @@ import (
 )
 
 func TestCurls(t *testing.T) {
-	g := &Helper{}
+	g := &CodeBuffer{}
 
-	items := InputStruct{
+	items := DatabaseEntity{
 		Name:         "Example",
 		DatabaseName: "example",
-		Items: []InputItems{
+		Items: []EnitityRow{
 			{Name: "id", DatabaseName: "id", Type: "int", IsPrimaryKey: true},
 			{Name: "item", DatabaseName: "item", Type: "string", IsPrimaryKey: false},
 		},
