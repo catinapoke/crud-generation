@@ -71,25 +71,44 @@ func (Generator) PackageHeader(g *CodeBuffer, packageName string, imports ...str
 	}
 }
 
-func (Generator) Method(g *CodeBuffer, name string, originType *FieldData, returnTypes []string, params []FieldData, bodyWriter func(b CodeWriter)) {
+type MethodData struct {
+	Name              string
+	IsPointerReceiver bool
+	OriginType        *FieldData
+	ReturnTypes       []string
+	Params            []FieldData
+}
+
+func (Generator) Method(g *CodeBuffer, data MethodData, bodyWriter func(b CodeWriter)) {
 	g.P("func ")
 
-	if originType != nil {
-		g.P("(", originType.Name, " ", *&originType.Type, ") ")
+	if data.OriginType != nil {
+		var receiver string
+		if data.IsPointerReceiver {
+			receiver = "*"
+		}
+		g.P("(", data.OriginType.Name, " ", receiver, (*data.OriginType).Type, ") ")
 	}
 
-	g.P(name, "(")
+	g.P(data.Name, "(")
 
-	// write params
-
-	// TODO: rewrite so it doesn't make line break if it's one param
-	for _, item := range params {
-		g.L(item.WithoutTags(), ",")
+	// condition so it doesn't make line break if it's one param
+	switch len(data.Params) {
+	case 0:
+		// do nothing
+	case 1:
+		g.P(data.Params[0].WithoutTags())
+	default:
+		g.L()
+		for _, item := range data.Params {
+			g.L(item.WithoutTags(), ",")
+		}
 	}
+
 	g.P(")")
 
-	if len(returnTypes) > 0 {
-		g.P("(", strings.Join(returnTypes, ", "), ")")
+	if len(data.ReturnTypes) > 0 {
+		g.P("(", strings.Join(data.ReturnTypes, ", "), ")")
 	}
 
 	// write body

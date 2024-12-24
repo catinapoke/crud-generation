@@ -32,14 +32,33 @@ func TestGenerator(t *testing.T) {
 	g.Struct(buf, structData)
 
 	// Generate getter method
-	g.Method(buf, "GetName", &FieldData{Name: "p", Type: "Person"}, []string{"string"}, []FieldData{}, func(b CodeWriter) {
+	g.Method(buf, MethodData{
+		Name:        "GetName",
+		OriginType:  &FieldData{Name: "p", Type: "Person"},
+		ReturnTypes: []string{"string"},
+		Params:      []FieldData{},
+	}, func(b CodeWriter) {
 		b.L("return p.Name")
 	})
 
 	buf.L("")
 
-	g.Method(buf, "GetOthersName", nil, []string{"string"}, []FieldData{{Name: "p", Type: "Person"}}, func(b CodeWriter) {
+	g.Method(buf, MethodData{
+		Name:        "GetOthersName",
+		OriginType:  nil,
+		ReturnTypes: []string{"string"},
+		Params:      []FieldData{{Name: "p", Type: "Person"}},
+	}, func(b CodeWriter) {
 		b.L("return p.Name")
+	})
+
+	g.Method(buf, MethodData{
+		Name:        "Empty",
+		OriginType:  nil,
+		ReturnTypes: []string{"int"},
+		Params:      []FieldData{{Name: "_", Type: "int"}, {Name: "_", Type: "Person"}},
+	}, func(b CodeWriter) {
+		b.L("return 1")
 	})
 
 	err := g.WriteFile(buf, "person", "./")
@@ -47,5 +66,5 @@ func TestGenerator(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// add compile test
+	// TODO: add compile test
 }

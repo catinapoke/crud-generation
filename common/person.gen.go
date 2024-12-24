@@ -9,7 +9,12 @@ func (p Person) GetName() string {
 	return p.Name
 }
 
-func GetOthersName(p Person,
-) string {
+func GetOthersName(p Person) string {
 	return p.Name
+}
+func Empty(
+	_ int,
+	_ Person,
+) int {
+	return 1
 }
